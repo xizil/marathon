@@ -96,7 +96,7 @@ class ResidentTaskIntegrationTest extends AkkaIntegrationTest with EmbeddedMarat
         PathId(app.id),
         AppUpdate(
           instances = Some(1),
-          cmd = Some(s"""test -e $containerPath/data && sleep 2""")
+          cmd = Some(s"""test -e $containerPath/data && sleep 10000""")
         )
       )
       update.code shouldBe 200
@@ -104,7 +104,6 @@ class ResidentTaskIntegrationTest extends AkkaIntegrationTest with EmbeddedMarat
 
       waitForStatusUpdates(StatusUpdate.TASK_RUNNING)
       waitForDeployment(update)
-      waitForStatusUpdates(StatusUpdate.TASK_FINISHED)
     }
 
     "resident task is launched completely on reserved resources" in new Fixture {
