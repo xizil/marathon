@@ -8,6 +8,7 @@ import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder }
 import mesosphere.marathon.core.launcher.impl.TaskLabels
 import mesosphere.marathon.core.pod.{ BridgeNetwork, ContainerNetwork }
 import mesosphere.marathon.core.task.Task
+import mesosphere.marathon.core.task.state.NetworkInfoTestDefaults
 import mesosphere.marathon.raml.Resources
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state.VersionInfo._
@@ -785,7 +786,81 @@ class ResourceMatcherTest extends UnitTest with Inside {
         knownInstances = Seq(),
         ResourceSelector.reservable) shouldBe a[ResourceMatchResponse.Match]
     }
+
+    "multiple instances of a task with persistent volume do not dispatch to different nodes when unique hostname constraint is set" in {
+      val offer = MarathonTestHelper.makeBasicOffer().
+        addResources(MarathonTestHelper.scalarResource("disk", 1024.0)).
+        setHostname(NetworkInfoTestDefaults.defaultHostName).
+        build()
+
+      val volume = PersistentVolume(
+        containerPath = "/var/data",
+        mode = Mesos.Volume.Mode.RW,
+        persistent = PersistentVolumeInfo(
+          size = 500, `type` = DiskType.Root))
+
+      val app = AppDefinition(
+        id = "/test-persistent-volumes-with-unique-constraint".toRootPath,
+        instances = 3,
+        resources = Resources(cpus = 0.1, mem = 32.0, disk = 0.0),
+        constraints = Set(Constraint.newBuilder.setField("hostname").
+          setOperator(Constraint.Operator.UNIQUE).build),
+        container = Some(Container.Mesos(
+          volumes = List(volume))))
+
+      // Since offer matcher checks the instance version it's should be >= app.version
+      val instance = TestInstanceBuilder.newBuilder(app.id, version = app.version).addTaskReserved(
+        Task.LocalVolumeId(app.id, volume))
+        .getInstance()
+
+      val response = ResourceMatcher.matchResources(
+        offer, app, knownInstances = Seq(instance), ResourceSelector.reservable)
+
+      response shouldBe a[ResourceMatchResponse.NoMatch]
+      logger.debug(s">> Offer matcher response: $response")
+      // Constraints for run spec [/test-persistent-volumes-with-unique-constraint] not satisfied.
+      //The conflicting constraints are: [field: "hostname"
+      //operator: UNIQUE
+      //]
+    }
+
+    "multiple instances of a task with persistent volume does dispatch to different nodes when NO unique hostname constraint is set" in {
+      val offer = MarathonTestHelper.makeBasicOffer().
+        addResources(MarathonTestHelper.scalarResource("disk", 1024.0)).
+        setHostname(NetworkInfoTestDefaults.defaultHostName).
+        build()
+
+      val volume = PersistentVolume(
+        containerPath = "/var/data",
+        mode = Mesos.Volume.Mode.RW,
+        persistent = PersistentVolumeInfo(
+          size = 500, `type` = DiskType.Root))
+
+      val app = AppDefinition(
+        id = "/test-persistent-volumes-without-unique-constraint".toRootPath,
+        instances = 3,
+        resources = Resources(cpus = 0.1, mem = 32.0, disk = 0.0),
+        container = Some(Container.Mesos(
+          volumes = List(volume))))
+
+      // Since offer matcher checks the instance version it's should be >= app.version
+      val instance = TestInstanceBuilder.newBuilder(app.id, version = app.version).addTaskReserved(
+        Task.LocalVolumeId(app.id, volume))
+        .getInstance()
+
+      val response = ResourceMatcher.matchResources(
+        offer, app, knownInstances = Seq(instance), ResourceSelector.reservable)
+
+      response shouldBe a[ResourceMatchResponse.Match]
+      logger.debug(s">> Offer matcher response: $response")
+      //Offer matcher response: Match(ResourceMatch(List(
+      // cpus SATISFIED (0.1 <= 0.1),
+      // mem SATISFIED (32.0 <= 32.0),
+      // disk including volumes for type root SATISFIED),
+      // PortsMatch(List())))
+    }
   }
+
   val appId = PathId("/test")
   def instance(id: String, version: Timestamp, attrs: Map[String, String]): Instance = { // linter:ignore:UnusedParameter
     val attributes: Seq[Attribute] = attrs.map {
