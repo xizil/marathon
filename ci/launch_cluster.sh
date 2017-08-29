@@ -46,4 +46,8 @@ EOF
 ./dcos-launch wait
 
 # Return dcos_url
-echo "http://$(./dcos-launch describe | jq -r ".masters[0].public_ip")/"
+if [ "$VARIANT" == "strict" ]; then
+    echo "https://$(./dcos-launch describe | jq -r ".masters[0].public_ip")/"
+else
+    echo "http://$(./dcos-launch describe | jq -r ".masters[0].public_ip")/"
+fi
