@@ -60,8 +60,7 @@ def killStaleTestProcesses(): Unit = {
   if (stuffToKill.isEmpty) {
     println("No junk processes detected")
   } else {
-    println("This requires root permissions. If you run this on a workstation it'll kill more than you expect.")
-    println()
+    println("This requires root permissions. If you run this on a workstation it'll kill more than you expect.\n")
     println(s"Will kill:")
     stuffToKill.foreach( p => println(s"  $p"))
 
@@ -76,5 +75,11 @@ def killStaleTestProcesses(): Unit = {
     // We use %% to avoid exceptions. It is not important if the kill fails.
     try { %%('sudo, 'kill, "-9", pids) }
     catch { case e => println(s"Could not kill stale process.") }
+
+    // Print stale processes if any exist to see what couldn't be killed:
+    if (stuffToKill.nonEmpty) {
+      println("Couldn't kill some junk processes:")
+      stuffToKill.foreach( p => println(s"  $p"))
+    }
   }
 }
