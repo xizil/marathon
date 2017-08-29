@@ -39,7 +39,7 @@ implicit val eeBuildInfoFormat = Json.format[EeBuildInfo]
  * @param branch Branch that is checkout out.
  * @param f The function that is applied to the repository.
  */
-def withRepository(repo: String, branch: String, repoPath: String)(f: Git => Unit)(implicit creds: CredentialsProvider): Unit = {
+def withRepository(repo: String, branch: String, repoPath: Path)(f: Git => Unit)(implicit creds: CredentialsProvider): Unit = {
   // Make sure the path is empty for cloning.
   rm! repoPath
 
@@ -92,7 +92,7 @@ def upgradeDCOS(git: Git, remoteName: String)(implicit creds: CredentialsProvide
  * @param sha1 The sha1 checksum of the Marathon artifact.
  */
 @main
-def updateBuildInfo(url: String, sha1: String, repoPath: String, fileName: String): Unit = {
+def updateBuildInfo(url: String, sha1: String, repoPath: Path, fileName: String): Unit = {
   // Load
   val buildInfoPath = repoPath / 'packages / 'marathon / fileName
   val buildInfoData = read(buildInfoPath)
@@ -116,7 +116,7 @@ def updateBuildInfo(url: String, sha1: String, repoPath: String, fileName: Strin
   * @param sha1 The sha1 checksum of the Marathon artifact.
   */
 @main
-def updateEeBuildInfo(url: String, sha1: String, repoPath: String, fileName: String): Unit = {
+def updateEeBuildInfo(url: String, sha1: String, repoPath: Path, fileName: String): Unit = {
   // Load
   val buildInfoPath = repoPath / 'packages / 'marathon / fileName
   val buildInfoData = read(buildInfoPath)
@@ -125,7 +125,7 @@ def updateEeBuildInfo(url: String, sha1: String, repoPath: String, fileName: Str
 
   // Modify
   val updatedBuildInfo = buildInfo.copy(
-    sources = buildInfo.sources.updated("marathon", sources("marathon").copy(url = url, sha1 = sha1))
+    sources = buildInfo.sources.updated("marathon", buildInfo.sources("marathon").copy(url = url, sha1 = sha1))
   )
 
   // Save again.
@@ -245,7 +245,7 @@ def updateMarathon(url: String, sha1: String, message: String): Unit = {
   * @param message The commit message for the change.
   */
 @main
-def updateMarathonEe(url: String, sha1: String, message: String): Unit = {
+def updateMarathonEE(url: String, sha1: String, message: String): Unit = {
 
   // Authentication
   val user = sys.env("GIT_USER")
