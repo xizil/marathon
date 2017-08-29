@@ -2,9 +2,12 @@
 
 set -e -o pipefail
 
-./ci/launch_cluster.sh
+if [ "$#" -ne 1 ]; then
+    echo "Expected 1 parameter: <dcos_url> e.g. system_integration.sh http://..."
+    exit 1
+fi
 
-DCOS_URL="http://$(./dcos-launch describe | jq -r ".masters[0].public_ip")/"
+DCOS_URL="$1"
 cp -f "$DOT_SHAKEDOWN" "$HOME/.shakedown"
 
 TERM=velocity shakedown \
