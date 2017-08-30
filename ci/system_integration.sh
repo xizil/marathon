@@ -10,11 +10,10 @@ fi
 DCOS_URL="$1"
 cp -f "$DOT_SHAKEDOWN" "$HOME/.shakedown"
 
-dcos config set core.ssl_verify False
-
 TERM=velocity shakedown \
   --stdout all \
   --stdout-inline \
+  --ssl-no-verify \
   --timeout 360000 \
   --pytest-option "--junitxml=shakedown.xml" \
   --ssh-key-file "$CLI_TEST_SSH_KEY" \
