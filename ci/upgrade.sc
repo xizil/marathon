@@ -36,7 +36,8 @@ implicit val eeBuildInfoFormat = Json.format[EeBuildInfo]
  * is removed once f finished.
  *
  * @param repo Repository address.
- * @param branch Branch that is checkout out.
+ * @param branch Branch that is checked out.
+ * @param repoPath Local path of the checked out repository.
  * @param f The function that is applied to the repository.
  */
 def withRepository(repo: String, branch: String, repoPath: Path)(f: Git => Unit)(implicit creds: CredentialsProvider): Unit = {
@@ -52,7 +53,7 @@ def withRepository(repo: String, branch: String, repoPath: Path)(f: Git => Unit)
     .setDirectory(repoPath.toIO)
     .call()
 
-  println(s"Cloned $repo:$branch. into $repoPath")
+  println(s"Cloned $repo:$branch into $repoPath")
 
   // Set proper user
   val config = git.getRepository().getConfig()
@@ -72,6 +73,7 @@ def withRepository(repo: String, branch: String, repoPath: Path)(f: Git => Unit)
  * Pulls latest changes from dcos/dcos repository.
  *
  * @param git The Git repository that will be updated.
+ * @param remoteName The remote (uri or name) to be used for the pull operation.
  */
 def upgradeDCOS(git: Git, remoteName: String)(implicit creds: CredentialsProvider): Unit = {
   // Update with latest master from the passed remote
@@ -90,6 +92,8 @@ def upgradeDCOS(git: Git, remoteName: String)(implicit creds: CredentialsProvide
  *
  * @param url The URL to the new Marathon artifact.
  * @param sha1 The sha1 checksum of the Marathon artifact.
+ * @param repoPath Local path of the checked out repository.
+ * @param fileName Name of marathon's buildinfo file.
  */
 @main
 def updateBuildInfo(url: String, sha1: String, repoPath: Path, fileName: String): Unit = {
@@ -114,6 +118,8 @@ def updateBuildInfo(url: String, sha1: String, repoPath: Path, fileName: String)
   *
   * @param url The URL to the new Marathon artifact.
   * @param sha1 The sha1 checksum of the Marathon artifact.
+  * @param repoPath Local path of the checked out repository.
+  * @param fileName Name of marathon's buildinfo file.
   */
 @main
 def updateEeBuildInfo(url: String, sha1: String, repoPath: Path, fileName: String): Unit = {
@@ -182,6 +188,7 @@ def throwIfNotSuccessful(refSpec: RefSpec)(result: PushResult): Unit = {
  *
  * @param git Reference to git repository.
  * @param commitRev The reference of the commit which is pushed.
+ * @param destination Branch reference to push to.
  */
 def push(git: Git, commitRev: RevCommit, destination: String)(implicit creds: CredentialsProvider): Unit = {
   import scala.collection.JavaConverters._
