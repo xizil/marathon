@@ -10,6 +10,8 @@ fi
 DCOS_URL="$1"
 cp -f "$DOT_SHAKEDOWN" "$HOME/.shakedown"
 
+dcos config set core.ssl_verify False
+
 TERM=velocity shakedown \
   --stdout all \
   --stdout-inline \
