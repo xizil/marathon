@@ -163,8 +163,8 @@ private class TaskLauncherActor(
       if (inFlightInstanceOperations.nonEmpty) {
         val taskIds = inFlightInstanceOperations.keys.take(3).mkString(", ")
         logger.info(
-          s"Still waiting for ${inFlightInstanceOperations.size} in-flight messages but stopping anyway, " +
-            s"first three task ids: $taskIds"
+          s"Still waiting for ${inFlightInstanceOperations.size} inflight messages but stopping anyway. " +
+            s"First three task ids: $taskIds"
         )
       }
       context.stop(self)
