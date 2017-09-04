@@ -147,8 +147,11 @@ if __name__ == "__main__":
         httpd.server_bind()
         httpd.server_activate()
         httpd.serve_forever()
-    except:
-        logging.exception("Exception in the main thread: ")
-        logging.error("Processes bound on port %d", port)
-        os.system("ps -a | grep $(lsof -ti :{})".format(port))
+    except socket.error as e:
+        # If "[Errno 48] Address already in use" then grep for the process using the port
+        if e.errno == 48:
+            logging.error("Failed to bind to port %d. Trying to grep blocking process:", port)
+            os.system("ps -a | grep $(lsof -ti :{})".format(port))
+        else:
+            logging.exception("Exception in the main thread: ")
         httpd.server_close()
