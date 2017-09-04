@@ -153,5 +153,9 @@ if __name__ == "__main__":
             logging.error("Failed to bind to port %d. Trying to grep blocking process:", port)
             os.system("ps -a | grep $(lsof -ti :{})".format(port))
         else:
-            logging.exception("Exception in the main thread: ")
+            logging.exception("Socket.error in the main thread: ")
+    except:
+        logging.exception("Exception in the main thread: ")
+    finally:
+        logging.info("Closing the server...")
         httpd.server_close()
