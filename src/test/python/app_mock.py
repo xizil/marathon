@@ -6,7 +6,6 @@ import platform
 import signal
 import socket
 import sys
-import threading
 
 # Ensure compatibility with Python 2 and 3.
 # See https://github.com/JioCloud/python-six/blob/master/six.py for details.
@@ -112,6 +111,7 @@ def make_handler(app_id, version, task_id, base_url):
 
     return Handler
 
+
 if __name__ == "__main__":
     logging.basicConfig(
         format='%(asctime)s %(levelname)-8s: %(message)s',
@@ -128,9 +128,9 @@ if __name__ == "__main__":
     # Defer binding and activating the server to a later point, allowing to set
     # allow_reuse_address=True option.
     httpd = HTTPServer(("", port),
-                        make_handler(app_id, version, task_id, base_url),
-                        bind_and_activate=False)
-    httpd.allow_reuse_address=True
+                       make_handler(app_id, version, task_id, base_url),
+                       bind_and_activate=False)
+    httpd.allow_reuse_address = True
 
     msg = "AppMock[%s %s]: %s has taken the stage at port %d. "\
           "Will query %s for health and readiness status."
