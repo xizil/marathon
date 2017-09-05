@@ -22,7 +22,6 @@ import mesosphere.marathon.core.leadership.{ LeadershipCoordinator, LeadershipMo
 import mesosphere.marathon.core.plugin.{ PluginDefinitions, PluginManager }
 import mesosphere.marathon.core.pod.PodManager
 import mesosphere.marathon.core.readiness.ReadinessCheckExecutor
-import mesosphere.marathon.core.task.bus.{ TaskChangeObservables, TaskStatusEmitter }
 import mesosphere.marathon.core.task.jobs.TaskJobsModule
 import mesosphere.marathon.core.task.termination.KillService
 import mesosphere.marathon.core.task.tracker.{ InstanceCreationHandler, InstanceTracker, TaskStateOpProcessor }
@@ -78,13 +77,6 @@ class CoreGuiceModule(config: Config) extends AbstractModule {
 
   @Provides @Singleton
   def offerProcessor(coreModule: CoreModule): OfferProcessor = coreModule.launcherModule.offerProcessor
-
-  @Provides @Singleton
-  def taskStatusEmitter(coreModule: CoreModule): TaskStatusEmitter = coreModule.taskBusModule.taskStatusEmitter
-
-  @Provides @Singleton
-  def taskStatusObservable(coreModule: CoreModule): TaskChangeObservables =
-    coreModule.taskBusModule.taskStatusObservables
 
   @Provides @Singleton
   def taskJobsModule(coreModule: CoreModule): TaskJobsModule = coreModule.taskJobsModule
