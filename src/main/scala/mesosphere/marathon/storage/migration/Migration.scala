@@ -2,10 +2,10 @@ package mesosphere.marathon
 package storage.migration
 
 import java.net.URI
-import java.util.concurrent.TimeUnit
 
 import akka.Done
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.actor.ActorSystem
+import akka.stream.Materializer
 import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.Protos.StorageVersion
 import mesosphere.marathon.core.async.ExecutionContexts.global
@@ -20,8 +20,6 @@ import scala.concurrent.{ Await, Future }
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
 import mesosphere.marathon.raml.RuntimeConfiguration
-
-import scala.util.Try
 
 /**
   * @param persistenceStore Optional "new" PersistenceStore for new migrations, the repositories
@@ -44,12 +42,14 @@ class Migration(
     private[migration] val runtimeConfigurationRepository: RuntimeConfigurationRepository,
     private[migration] val backup: PersistentStoreBackup,
     private[migration] val config: StorageConfig
-)(implicit mat: Materializer) extends StrictLogging {
+)(implicit mat: Materializer, system: ActorSystem) extends StrictLogging {
 
   import StorageVersions._
   import Migration.MigrationAction
 
   private[migration] val minSupportedStorageVersion = StorageVersions(1, 4, 0, StorageVersion.StorageFormat.PERSISTENCE_STORE)
+
+  protected def statusLoggingInterval = 10.seconds
 
   /**
     * All the migrations, that have to be applied.
@@ -68,6 +68,13 @@ class Migration(
       )
     )
 
+  protected def notifyMigrationInProgress(from: StorageVersion, migrateVersion: StorageVersion) = {
+    logger.info(
+      s"Migration for storage: ${from.str} to current: ${current.str}: " +
+        s"application of the change for version ${migrateVersion.str} is still in progress"
+    )
+  }
+
   def applyMigrationSteps(from: StorageVersion): Future[Seq[StorageVersion]] = {
     migrations.filter(_._1 > from).sortBy(_._1).foldLeft(Future.successful(Seq.empty[StorageVersion])) {
       case (resultsFuture, (migrateVersion, change)) => resultsFuture.flatMap { res =>
@@ -76,24 +83,9 @@ class Migration(
             s"apply change for version: ${migrateVersion.str} "
         )
 
-        val statusLoggingInterval = Try {
-          mat.asInstanceOf[ActorMaterializer].system.settings.config
-            .getDuration("migration.status-logging-interval", TimeUnit.MILLISECONDS).millis
-        } getOrElse {
-          logger.info("Can't get status logging interval from config, default value will be used")
-          10.seconds
+        val migrationInProgressNotification = system.scheduler.schedule(statusLoggingInterval, statusLoggingInterval) {
+          notifyMigrationInProgress(from, migrateVersion)
         }
-
-        val migrationInProgressNotification = mat.schedulePeriodically(
-          statusLoggingInterval,
-          statusLoggingInterval,
-          new Runnable {
-            override def run(): Unit =
-              logger.info(
-                s"Migration for storage: ${from.str} to current: ${current.str}: " +
-                  s"application of the change for version ${migrateVersion.str} is still in progress"
-              )
-          })
 
         change.apply().recover {
           case NonFatal(e) =>
