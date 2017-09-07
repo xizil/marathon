@@ -89,7 +89,6 @@ class Migration(
 
         change.apply().recover {
           case NonFatal(e) =>
-            migrationInProgressNotification.cancel()
             throw new MigrationFailedException(s"while migrating storage to $migrateVersion", e)
         }.map { _ =>
           res :+ migrateVersion

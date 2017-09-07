@@ -17,11 +17,12 @@ import mesosphere.marathon.storage.repository._
 import mesosphere.marathon.test.Mockito
 import org.scalatest.GivenWhenThen
 import Migration.MigrationAction
+import org.scalatest.concurrent.Eventually
 
 import concurrent.duration._
 import scala.concurrent.Future
 
-class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen {
+class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen with Eventually {
 
   class Fixture(
       persistenceStore: PersistenceStore[_, _, _] = new InMemoryPersistenceStore(),
@@ -196,14 +197,9 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen {
 
       migrate.migrate()
 
-      val notificationCount = f.notificationCounter.get()
-
-      assert(notificationCount >= 3)
-
-      //now we'll check that notifications are stopped
-      Thread.sleep(500)
-
-      f.notificationCounter.get() shouldEqual notificationCount
+      eventually {
+        f.notificationCounter.get() should be >= 5
+      }
 
       verify(mockedStore).storageVersion()
       verify(mockedStore).setStorageVersion(StorageVersions.current)
