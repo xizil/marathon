@@ -21,7 +21,6 @@ class OfferMatcherLaunchTokensActorTest extends AkkaUnitTest {
 
     val actorRef: TestActorRef[OfferMatcherLaunchTokensActor] = TestActorRef[OfferMatcherLaunchTokensActor](
       OfferMatcherLaunchTokensActor.props(conf, offerMatcherManager)
-
     )
 
     def verifyClean(): Unit = {
