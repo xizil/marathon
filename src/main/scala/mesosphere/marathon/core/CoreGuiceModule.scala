@@ -152,7 +152,6 @@ class CoreGuiceModule(config: Config) extends AbstractModule {
     notifyHealthCheckManagerStepImpl: NotifyHealthCheckManagerStepImpl,
     notifyRateLimiterStepImpl: NotifyRateLimiterStepImpl,
     notifyLaunchQueueStepImpl: NotifyLaunchQueueStepImpl,
-    taskStatusEmitterPublishImpl: TaskStatusEmitterPublishStepImpl,
     postToEventStreamStepImpl: PostToEventStreamStepImpl,
     scaleAppUpdateStepImpl: ScaleAppUpdateStepImpl): Seq[InstanceChangeHandler] = {
 
@@ -172,7 +171,6 @@ class CoreGuiceModule(config: Config) extends AbstractModule {
       ContinueOnErrorStep(notifyHealthCheckManagerStepImpl),
       ContinueOnErrorStep(notifyRateLimiterStepImpl),
       ContinueOnErrorStep(notifyLaunchQueueStepImpl),
-      ContinueOnErrorStep(taskStatusEmitterPublishImpl),
       ContinueOnErrorStep(postToEventStreamStepImpl),
       ContinueOnErrorStep(scaleAppUpdateStepImpl)
     )

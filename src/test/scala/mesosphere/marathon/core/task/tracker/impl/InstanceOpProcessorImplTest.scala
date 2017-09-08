@@ -64,7 +64,6 @@ class InstanceOpProcessorImplTest extends AkkaUnitTest {
       notifyHealthCheckManager,
       notifyRateLimiter,
       notifyLaunchQueue,
-      emitUpdate,
       postToEventStream,
       scaleApp
     )
@@ -74,7 +73,6 @@ class InstanceOpProcessorImplTest extends AkkaUnitTest {
     lazy val notifyRateLimiter = new NotifyRateLimiterStepImpl(launchQueueProvider, groupManagerProvider)
     lazy val postToEventStream = new PostToEventStreamStepImpl(eventBus)
     lazy val notifyLaunchQueue = new NotifyLaunchQueueStepImpl(launchQueueProvider)
-    lazy val emitUpdate = new TaskStatusEmitterPublishStepImpl(system)
     lazy val scaleApp = new ScaleAppUpdateStepImpl(schedulerActorProvider)
     lazy val processor = new InstanceOpProcessorImpl(instanceTrackerProbe.ref, instanceRepository, stateOpResolver, config)
 
