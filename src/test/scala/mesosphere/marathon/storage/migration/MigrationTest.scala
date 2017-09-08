@@ -1,7 +1,7 @@
 package mesosphere.marathon
 package storage.migration
 
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.Done
 import akka.stream.scaladsl.Source
@@ -17,10 +17,11 @@ import mesosphere.marathon.storage.repository._
 import mesosphere.marathon.test.Mockito
 import org.scalatest.GivenWhenThen
 import Migration.MigrationAction
+import akka.actor.{ Cancellable, Scheduler }
 import org.scalatest.concurrent.Eventually
 
 import concurrent.duration._
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen with Eventually {
 
@@ -39,7 +40,18 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen with Ev
     private val serviceDefinitionRepository: ServiceDefinitionRepository = mock[ServiceDefinitionRepository]
     private val config: StorageConfig = InMem(1, Set.empty, None, None)
 
-    val notificationCounter = new AtomicInteger(0)
+    val cancellable = new Cancellable {
+      val cancelled = new AtomicBoolean(false)
+      override def cancel(): Boolean = cancelled.getAndSet(true)
+      override def isCancelled: Boolean = cancelled.get()
+    }
+
+    //mockito can't mock call-by-name parameters, have to mock a scheduler manually
+    val mockedScheduler: Scheduler = new Scheduler {
+      override def maxFrequency: Double = ???
+      override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = cancellable
+      override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = ???
+    }
 
     // assume no runtime config is stored in repository
     configurationRepository.get() returns Future.successful(None)
@@ -48,11 +60,7 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen with Ev
       instanceRepository, taskFailureRepository, frameworkIdRepository,
       serviceDefinitionRepository, configurationRepository, backup, config) {
 
-      override protected def notifyMigrationInProgress(from: StorageVersion, migrateVersion: StorageVersion): Unit = {
-        notificationCounter.incrementAndGet()
-      }
-
-      override protected def statusLoggingInterval = 200.millis
+      override protected def scheduler = mockedScheduler
 
       override def migrations: List[(StorageVersion, () => Future[Any])] = if (fakeMigrations.nonEmpty) {
         fakeMigrations
@@ -177,15 +185,14 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen with Ev
     "log periodic messages if migration takes more time than usual" in {
       val mockedStore = mock[PersistenceStore[_, _, _]]
 
-      val longMigration = List(
-        StorageVersions(1, 4, 2, StorageVersion.StorageFormat.PERSISTENCE_STORE) -> { () =>
-          akka.pattern.after(1100.millis, system.scheduler) { //1100 because we want to catch 5 ticks of notifications
-            Future.successful(Done)
-          }
+      val migration = List(
+        StorageVersions(1, 4, 2, StorageVersion.StorageFormat.PERSISTENCE_STORE) -> { () => Future.successful(Done)
         }
       )
 
-      val f = new Fixture(mockedStore, longMigration)
+      val f = new Fixture(mockedStore, migration)
+
+      assert(!f.cancellable.isCancelled)
 
       val migrate = f.migration
 
@@ -197,9 +204,7 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen with Ev
 
       migrate.migrate()
 
-      eventually {
-        f.notificationCounter.get() should be >= 5
-      }
+      assert(f.cancellable.isCancelled)
 
       verify(mockedStore).storageVersion()
       verify(mockedStore).setStorageVersion(StorageVersions.current)

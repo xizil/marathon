@@ -68,6 +68,8 @@ class Migration(
       )
     )
 
+  protected def scheduler = system.scheduler
+
   protected def notifyMigrationInProgress(from: StorageVersion, migrateVersion: StorageVersion) = {
     logger.info(
       s"Migration for storage: ${from.str} to current: ${current.str}: " +
@@ -83,7 +85,7 @@ class Migration(
             s"apply change for version: ${migrateVersion.str} "
         )
 
-        val migrationInProgressNotification = system.scheduler.schedule(statusLoggingInterval, statusLoggingInterval) {
+        val migrationInProgressNotification = scheduler.schedule(statusLoggingInterval, statusLoggingInterval) {
           notifyMigrationInProgress(from, migrateVersion)
         }
 
