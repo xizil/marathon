@@ -39,7 +39,7 @@ class OfferMatcherLaunchTokensActorTest extends AkkaUnitTest {
       // startup
       Mockito.verify(offerMatcherManager).setLaunchTokens(conf.launchTokens())
 
-      system.eventStream.publish(TaskStatusUpdateTestHelper.running().wrapped)
+      TaskStatusUpdateTestHelper.running().wrapped.events.foreach(system.eventStream.publish)
 
       Mockito.verify(offerMatcherManager).addLaunchTokens(1)
       verifyClean()
@@ -49,7 +49,7 @@ class OfferMatcherLaunchTokensActorTest extends AkkaUnitTest {
       // startup
       Mockito.verify(offerMatcherManager).setLaunchTokens(conf.launchTokens())
 
-      system.eventStream.publish(TaskStatusUpdateTestHelper.runningHealthy().wrapped)
+      TaskStatusUpdateTestHelper.runningHealthy().wrapped.events.foreach(system.eventStream.publish)
 
       Mockito.verify(offerMatcherManager).addLaunchTokens(1)
       verifyClean()
@@ -59,7 +59,7 @@ class OfferMatcherLaunchTokensActorTest extends AkkaUnitTest {
       // startup
       Mockito.verify(offerMatcherManager).setLaunchTokens(conf.launchTokens())
 
-      system.eventStream.publish(TaskStatusUpdateTestHelper.runningUnhealthy().wrapped)
+      TaskStatusUpdateTestHelper.runningUnhealthy().wrapped.events.foreach(system.eventStream.publish)
       verifyClean()
     }
   }

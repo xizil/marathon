@@ -31,7 +31,6 @@ class PostToEventStreamStepImplTest extends UnitTest {
       f.step.process(instanceChange).futureValue
 
       "post each event to the event stream and not a health changed event" in {
-        verify(f.eventStream, once).publish(instanceChange)
         verify(f.eventStream, once).publish(f.event1)
         verify(f.eventStream, once).publish(f.event2)
         noMoreInteractions(f.eventStream)
@@ -52,7 +51,6 @@ class PostToEventStreamStepImplTest extends UnitTest {
         val expectedHealthChange = InstanceHealthChanged(instanceChange.id, instanceChange.runSpecVersion,
           instanceChange.runSpecId, Some(false))
 
-        verify(f.eventStream, once).publish(instanceChange)
         verify(f.eventStream, once).publish(f.event1)
         verify(f.eventStream, once).publish(f.event2)
         verify(f.eventStream, once).publish(expectedHealthChange)
@@ -73,7 +71,6 @@ class PostToEventStreamStepImplTest extends UnitTest {
         val expectedHealthChange = InstanceHealthChanged(instanceChange.id, instanceChange.runSpecVersion,
           instanceChange.runSpecId, Some(false))
 
-        verify(f.eventStream, once).publish(instanceChange)
         verify(f.eventStream, once).publish(f.event1)
         verify(f.eventStream, once).publish(f.event2)
         verify(f.eventStream, once).publish(expectedHealthChange)
@@ -95,7 +92,6 @@ class PostToEventStreamStepImplTest extends UnitTest {
         val expectedHealthChange = InstanceHealthChanged(instanceChange.id, instanceChange.runSpecVersion,
           instanceChange.runSpecId, None)
 
-        verify(f.eventStream, once).publish(instanceChange)
         verify(f.eventStream, once).publish(f.event1)
         verify(f.eventStream, once).publish(f.event2)
         verify(f.eventStream, once).publish(expectedHealthChange)
