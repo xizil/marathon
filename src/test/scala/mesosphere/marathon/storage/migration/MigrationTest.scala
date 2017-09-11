@@ -40,7 +40,7 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen with Ev
     private val serviceDefinitionRepository: ServiceDefinitionRepository = mock[ServiceDefinitionRepository]
     private val config: StorageConfig = InMem(1, Set.empty, None, None)
 
-    val cancellable = new Cancellable {
+    val scheduledNotification = new Cancellable {
       val cancelled = new AtomicBoolean(false)
       override def cancel(): Boolean = cancelled.getAndSet(true)
       override def isCancelled: Boolean = cancelled.get()
@@ -49,7 +49,7 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen with Ev
     //mockito can't mock call-by-name parameters, have to mock a scheduler manually
     val mockedScheduler: Scheduler = new Scheduler {
       override def maxFrequency: Double = ???
-      override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = cancellable
+      override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = scheduledNotification
       override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = ???
     }
 
@@ -192,7 +192,7 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen with Ev
 
       val f = new Fixture(mockedStore, migration)
 
-      assert(!f.cancellable.isCancelled)
+      f.scheduledNotification should not be 'cancelled
 
       val migrate = f.migration
 
@@ -204,7 +204,7 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen with Ev
 
       migrate.migrate()
 
-      assert(f.cancellable.isCancelled)
+      f.scheduledNotification shouldBe 'cancelled
 
       verify(mockedStore).storageVersion()
       verify(mockedStore).setStorageVersion(StorageVersions.current)
