@@ -392,7 +392,10 @@ class DockerImageTest extends MesosTest {
 
   "The resulting start-hook.env file is sourced" in {
     // Round about way of testing this; the HOOK_MARATHON_START file creates an env file which sets this parameter
-    execBash(dockerMarathon.containerId, "curl localhost:8080/v2/info") should include("http://test-host:port")
+    implicit val patienceConfig = veryPatient
+    eventually {
+      execBash(dockerMarathon.containerId, "curl localhost:8080/v2/info") should include("http://test-host:port")
+    }
   }
 
   "The installed Marathon registers and connects to the running Mesos master" in {
