@@ -52,7 +52,7 @@ object EntityMarshallers {
               case (path, validationErrors) =>
                 validationErrors.map { validationError =>
                   RuleViolation(
-                    validationError.args.headOption.map(_.toString).getOrElse(""),
+                    validationError.args.mkString(", "),
                     validationError.message,
                     Some(path.toString()))
                 }
